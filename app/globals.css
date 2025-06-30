@@ -1,0 +1,5 @@
+/* 1. Carga tu config antes que nada */
+@config "../tailwind.config.js";
+
+/* 2. Inyecta Tailwind v4 (base, components y utilities) */
+@import "tailwindcss"; 

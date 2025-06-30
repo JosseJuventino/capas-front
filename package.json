@@ -1,0 +1,45 @@
+{
+  "name": "capas-front",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@heroui/date-input": "^2.3.21",
+    "@heroui/date-picker": "^2.3.22",
+    "@heroui/react": "^2.8.0-beta.10",
+    "@heroui/system": "^2.4.18",
+    "@heroui/theme": "^2.4.17",
+    "@internationalized/date": "^3.8.2",
+    "@nextui-org/react": "^2.6.11",
+    "@nextui-org/theme": "^2.4.5",
+    "@pheralb/toast": "^1.0.0",
+    "@tanstack/react-query": "^5.80.7",
+    "axios": "^1.9.0",
+    "framer-motion": "^12.19.1",
+    "lucide-react": "^0.513.0",
+    "next": "15.3.3",
+    "next-auth": "^4.24.11",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-google-recaptcha-v3": "^1.11.0",
+    "react-tooltip": "^5.29.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.3",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5"
+  }
+}
