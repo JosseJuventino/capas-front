@@ -48,6 +48,8 @@ export const AddPublicationModal = ({
             descripcion: "",
             documentIds: [],
             workgroupId: courseId,
+            documentos: [],
+            files: [],
         }),
         [courseId]
     );
@@ -58,7 +60,23 @@ export const AddPublicationModal = ({
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        setFormData(initialData || emptyForm);
+        if (initialData) {
+            setFormData(initialData);
+
+            // Mapear documentos existentes al formato que espera MultiFileSelector
+            const existingFiles = initialData.documentos?.map(doc => ({
+                originalFileName: doc.originalFilename, // Nota: usa originalFileName (con N mayúscula)
+                url: doc.url,
+                tipo: doc.tipo,
+                id: doc.id || doc.id,
+            })) || [];
+
+            console.log("Archivos existentes mapeados:", existingFiles);
+            setFiles(existingFiles);
+        } else {
+            setFormData(emptyForm);
+            setFiles([]);
+        }
     }, [initialData, emptyForm]);
 
     // Mutaciones para agregar y actualizar
@@ -87,12 +105,6 @@ export const AddPublicationModal = ({
             queryClient.invalidateQueries({ queryKey: ["image"] });
         },
     });
-
-    // Inicializar el formulario con los datos de edición (si existen)
-    useEffect(() => {
-        setFormData(initialData || emptyForm);
-        setFiles(initialData?.files || []);
-    }, [initialData, emptyForm]);
 
     const handleFieldChange = (field: keyof Publicacion, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -246,7 +258,10 @@ export const AddPublicationModal = ({
                     onChange={(v) => handleFieldChange("categoria", v)}
                 />
 
-                <MultiFileSelector initialFiles={formData.files || []} setFiles={setFiles} />
+                <MultiFileSelector
+                    initialFiles={files.filter((file): file is Partial<FileNew> => !(file instanceof File))}
+                    setFiles={setFiles}
+                />
             </form>
         </Modal>
     );

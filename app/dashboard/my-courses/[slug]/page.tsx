@@ -14,7 +14,6 @@ import {
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Course, CourseAddInterface, Image as ImageFile, Publicacion } from "@/app/types/types";
-import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import { updateCourse } from "@/app/services/course.service";
 import { AddCourseModal } from "@/app/components/Popups/CourseConfigModal";
 import { uploadImage } from "@/app/services/images.service";
@@ -245,9 +244,6 @@ export default function Tablon() {
                         <h3 className="md:text-xl text-sm font-semibold text-gray-900">
                           {novedad.titulo}
                         </h3>
-                        <span className="text-sm text-gray-400 font-medium">
-                          {formatRelativeTime(novedad.createdAt)}
-                        </span>
                       </div>
                       <p
                         className={`text-gray-600 ${openId === novedad._id ? "" : "line-clamp-2"

@@ -18,10 +18,14 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
   const MAX_FILES = 5;
 
   useEffect(() => {
-    if (initialFiles.length > 0) {
-      setSelectedItems(initialFiles);
+    console.log("MultiFileSelector - initialFiles recibidos:", initialFiles);
+    if (initialFiles && initialFiles.length > 0) {
+        console.log("Estableciendo archivos iniciales:", initialFiles);
+        setSelectedItems(initialFiles);
+    } else {
+        setSelectedItems([]);
     }
-  }, [initialFiles]);
+}, [initialFiles]); 
 
   // Validar si el archivo es de imagen o documento (pdf, doc, docx)
   const validateFileType = (file: File) => {
@@ -34,13 +38,21 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
   };
 
   const addFileItem = (selectedFile: File) => {
-    // Validar cantidad de archivos seleccionados
-    if (selectedItems.length >= MAX_FILES) return;
+    if (selectedItems.length >= MAX_FILES) {
+      toast.error({
+        text: "Error",
+        description: `Máximo ${MAX_FILES} archivos permitidos`,
+      });
+      return;
+    }
 
-    // Validar tipo de archivo
-    if (!validateFileType(selectedFile)) return;
-
-
+    if (!validateFileType(selectedFile)) {
+      toast.error({
+        text: "Error",
+        description: "Tipo de archivo no permitido",
+      });
+      return;
+    }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
       toast.error({
@@ -48,15 +60,14 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
         description: "El archivo no puede ser mayor a 5MB",
       });
       return;
-    } else {
-      setSelectedItems((prev) => [...prev, selectedFile]);
-      if (setFiles) {
-        const updatedFiles: (File | Partial<FileNew>)[] = [...selectedItems, selectedFile];
-        setFiles(updatedFiles);
-      }
     }
 
+    const newItems = [...selectedItems, selectedFile];
+    setSelectedItems(newItems);
 
+    if (setFiles) {
+      setFiles(newItems);
+    }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,11 +82,11 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
   };
 
   const removeItem = (index: number) => {
-    setSelectedItems((prev) => prev.filter((_, i) => i !== index));
+    const newItems = selectedItems.filter((_, i) => i !== index);
+    setSelectedItems(newItems);
 
     if (setFiles) {
-      const updatedFiles = selectedItems.filter((_, i) => i !== index);
-      setFiles(updatedFiles);
+      setFiles(newItems);
     }
   };
 

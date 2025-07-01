@@ -9,10 +9,10 @@ export const addPublication = async (publicacion: Partial<Publicacion>): Promise
 };
 
 export const updatePublication = async (publicacion: Partial<Publicacion>): Promise<Partial<Publicacion>> => {
-  const response = await api.patch<Partial<Publicacion>>(`/publicacion/${publicacion._id}`, publicacion);
+  const response = await api.patch<Partial<Publicacion>>(`/documents-support-materials/support-material/${publicacion._id}`, publicacion);
   return response.data;
 };
 
 export const deletePublication = async (id: string): Promise<void> => {
-  await api.delete(`/publicacion/${id}`);
+  await api.delete(`/support-materials/${id}`);
 };
