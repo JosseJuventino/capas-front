@@ -4,7 +4,7 @@ import { useState } from "react";
 import Table from "@/app/components/Tables/Table";
 import { Column, Tutor } from "@/app/types/types";
 import PageHeader from "@/app/components/Dashboard/PageHeader";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle } from "lucide-react";
 import { DeleteModal } from "@/app/components/Popups/DeleteModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ListGridLayout from "@/app/components/Dashboard/ListGridLayout";
@@ -13,7 +13,7 @@ import { addTutor, deleteTutor, getTutors } from "@/app/services/tutors.service"
 import CardTutor from "@/app/components/CardViews/CardTutor";
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import { FormModalTutor } from "@/app/components/Popups/AddTutorModal";
-
+import { toast } from "@pheralb/toast";
 
 const ContactInfo = ({ email }: { email: string }) => (
     <div className="flex flex-col">
@@ -22,9 +22,6 @@ const ContactInfo = ({ email }: { email: string }) => (
 );
 
 export default function TutorPage() {
-
-    const DEFAULT_IMAGE = "https://refuerzo-mendoza.me/api/uploads/images/users/b706a946-4c4c-4745-b87d-eab8b4883138.webp"
-
     const [modalState, setModalState] = useState<{
         type: 'add' | 'edit' | 'delete' | null;
         selected: Tutor | null;
@@ -42,6 +39,7 @@ export default function TutorPage() {
     } = useQuery<Tutor[], Error>({
         queryKey: ["tutor"],
         queryFn: getTutors,
+        retry: 1, // Solo intenta una vez más si falla
     });
 
     const columns: Column<Tutor>[] = [
@@ -96,7 +94,16 @@ export default function TutorPage() {
         mutationFn: addTutor,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tutor'] });
+            toast.success({
+                text: "Tutor agregado exitosamente",
+            });
         },
+        onError: (error) => {
+            toast.error({
+                text: "Error al agregar el tutor",
+            });
+            console.error("Error al crear tutor:", error);
+        }
     });
 
     const deleteTutorMutation = useMutation({
@@ -107,26 +114,38 @@ export default function TutorPage() {
     });
 
     const handleAdd = async (newTutor: Tutor) => {
-        newTutor.image = DEFAULT_IMAGE;
         await addTutorMutation.mutateAsync(newTutor);
         closeModal();
     };
 
-
     const handleDelete = async () => {
         if (!modalState.selected) return;
-        await deleteTutorMutation.mutateAsync(modalState.selected._id);
-        closeModal();
+        try {
+            toast.loading({
+                text: "Eliminando tutor...",
+                options: {
+                    promise: deleteTutorMutation.mutateAsync(modalState.selected._id),
+                    success: "Tutor eliminado exitosamente",
+                    error: "Error al eliminar el tutor",
+                    autoDismiss: true,
+                    onSuccess: () => {
+                        closeModal();
+                        queryClient.invalidateQueries({ queryKey: ['tutor'] });
+                    },
+                    onError: (error) => {
+                        console.error("Error de eliminacion:", error);
+                    }
+                }
+            });
+        } catch {
+            throw new Error("Error al eliminar el tutor");
+        }
     };
-
 
     const closeModal = () => setModalState({ type: null, selected: null, });
 
-    if (isLoading) return <Loading />;
-
-    if (isError) {
-        return <div>Error: {error?.message}</div>;
-    }
+    // Usar un array vacío si hay error o no hay datos
+    const safeTutores = tutores ?? [];
 
     return (
         <div className="p-10">
@@ -144,33 +163,78 @@ export default function TutorPage() {
 
             <ListGridLayout isCardView={isCardView} setIsCardView={setIsCardView} />
 
-            {isCardView ? (
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tutores?.map((tutor) => (
-                        <CardTutor
-                            key={tutor._id}
-                            tutor={tutor}
-                            setModalState={setModalState}
-                        />
-                    ))}
-                </div>
-            ) : (
-                <div className="mt-4">
-                    <Table
-                        data={tutores ?? []}
-                        columns={columns}
-                        loading={false}
-                        hasEdit={false}
-                        onDelete={(id) => {
-                            const selected = tutores?.find(r => r._id === id);
-                            if (selected) {
-                                setModalState({ type: 'delete', selected });
-                            }
-                        }}
-                    />
+            {/* Mostrar loading solo si está cargando */}
+            {isLoading && (
+                <div className="mt-8">
+                    <Loading />
                 </div>
             )}
 
+            {/* Mostrar error si hay error, pero no bloquear el resto */}
+            {isError && !isLoading && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+                    <AlertCircle className="text-red-600" size={20} />
+                    <div>
+                        <p className="text-red-800 font-medium">Error al cargar los tutores</p>
+                        <p className="text-red-600 text-sm">{error?.message || "Por favor, intenta de nuevo más tarde"}</p>
+                        <button 
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ['tutor'] })}
+                            className="mt-2 text-sm text-red-700 underline hover:text-red-800"
+                        >
+                            Intentar de nuevo
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mostrar contenido si no está cargando */}
+            {!isLoading && (
+                <>
+                    {/* Mensaje cuando no hay tutores pero no hay error */}
+                    {!isError && safeTutores.length === 0 && (
+                        <div className="mt-8 text-center p-8 bg-gray-50 rounded-lg">
+                            <p className="text-gray-600 mb-4">No hay tutores registrados aún</p>
+                            <button
+                                onClick={() => setModalState({ type: 'add', selected: null })}
+                                className="bg-blue_principal text-white px-6 py-2 rounded-lg shadow-md transition-transform hover:scale-105 inline-flex items-center gap-2"
+                            >
+                                <Plus size={18} />
+                                Agregar primer tutor
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Mostrar tabla/cards solo si hay tutores */}
+                    {safeTutores.length > 0 && (
+                        isCardView ? (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {safeTutores.map((tutor) => (
+                                    <CardTutor
+                                        key={tutor._id}
+                                        tutor={tutor}
+                                        setModalState={setModalState}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mt-4">
+                                <Table
+                                    data={safeTutores}
+                                    columns={columns}
+                                    loading={false}
+                                    hasEdit={false}
+                                    onDelete={(id) => {
+                                        const selected = safeTutores.find(r => r._id === id);
+                                        if (selected) {
+                                            setModalState({ type: 'delete', selected });
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )
+                    )}
+                </>
+            )}
 
             <FormModalTutor
                 isOpen={modalState.type === 'add'}
@@ -178,7 +242,6 @@ export default function TutorPage() {
                 onClose={closeModal}
                 onSubmit={handleAdd}
             />
-
 
             <DeleteModal<Tutor>
                 isOpen={modalState.type === 'delete'}

@@ -201,15 +201,11 @@ const Sidenav: React.FC = () => {
           <div className="flex items-center gap-2 flex-1">
             {user?.image ? (
               <img
-                src={user.image || '/default-avatar.png'}
+                src={user.image}
                 alt="User avatar"
                 className="w-8 object-cover h-8 rounded-full"
                 width={32}
                 height={32}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/default-avatar.png';
-                }}
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -284,15 +280,11 @@ const Sidenav: React.FC = () => {
               <div className="flex items-center gap-2 flex-1">
                 {user?.image ? (
                   <img
-                    src={user.image || '/default-avatar.png'}
+                    src={user.image}
                     alt="User avatar"
                     className="w-8 object-cover h-8 rounded-full"
                     width={32}
                     height={32}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/default-avatar.png';
-                    }}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
