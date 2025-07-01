@@ -124,6 +124,10 @@ export const AddPublicationModal = ({
         if (!formData.descripcion?.trim()) {
             errors.push("La descripción no puede quedar vacía");
         }
+        if (files.length === 0) {
+            errors.push("Debe adjuntar al menos un archivo");
+        }
+
         if (!formData.categoria?.trim()) {
             errors.push("La categoría no puede quedar vacía");
         }
