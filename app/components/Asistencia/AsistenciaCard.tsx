@@ -2,7 +2,6 @@ import { Asistencia, AsistenciaEncargado } from "@/app/types/types";
 import { getEstadoColor } from "@/app/utils/getEstadoColor";
 import { capitalize } from "@/app/utils/utils";
 import { Check, CircleUser, TriangleAlert, X } from "lucide-react";
-import Image from "next/image";
 
 interface AsistenciaCardProps {
     localAsistencia: Asistencia;
@@ -42,12 +41,9 @@ export default function AsistenciaCard({
             >
                 <div className="flex flex-row items-center gap-4 flex-1">
                     {alumno.image ? (
-                        <Image
+                        <img
                             src={alumno.image}
                             alt={alumno.nombre}
-                            width={300}
-                            height={300}
-                            quality={100}
                             className="w-12 h-12 rounded-full object-cover"
                         />
                     ) : (

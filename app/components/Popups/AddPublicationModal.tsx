@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./Modal";
-import { FilePublicacion, Image, Publicacion, FileNew } from "@/app/types/types";
+import {Image, Publicacion, FileNew } from "@/app/types/types";
 import { toast } from "@pheralb/toast";
 import { TextAreaField } from "../Fields/TextAreaField";
 import SelectFieldV2 from "../Fields/SelectField2";
@@ -40,7 +40,6 @@ export const AddPublicationModal = ({
     onClose,
     title,
     courseId,
-    courseSlug
 }: FormModalProps) => {
     const emptyForm = useMemo<Partial<Publicacion>>(
         () => ({
@@ -55,8 +54,9 @@ export const AddPublicationModal = ({
     );
 
     const [formData, setFormData] = useState<Partial<Publicacion>>(emptyForm);
-
     const [files, setFiles] = useState<(File | Partial<FileNew>)[]>([]);
+    const [existingFiles, setExistingFiles] = useState<Partial<FileNew>[]>([]);
+    
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -64,27 +64,29 @@ export const AddPublicationModal = ({
             setFormData(initialData);
 
             // Mapear documentos existentes al formato que espera MultiFileSelector
-            const existingFiles = initialData.documentos?.map(doc => ({
-                originalFileName: doc.originalFilename, // Nota: usa originalFileName (con N mayúscula)
+            const mappedFiles = initialData.documentos?.map(doc => ({
+                originalFileName: doc.originalFilename,
                 url: doc.url,
                 tipo: doc.tipo,
                 id: doc.id || doc.id,
             })) || [];
 
-            console.log("Archivos existentes mapeados:", existingFiles);
-            setFiles(existingFiles);
+            console.log("Archivos existentes mapeados:", mappedFiles);
+            setExistingFiles(mappedFiles);
+            setFiles(mappedFiles);
         } else {
             setFormData(emptyForm);
             setFiles([]);
+            setExistingFiles([]);
         }
-    }, [initialData, emptyForm]);
+    }, [initialData, emptyForm, isOpen]);
 
     // Mutaciones para agregar y actualizar
     const addPublicationMutation = useMutation({
         mutationFn: addPublication,
         onSuccess: () => {
             queryClient.invalidateQueries({
-                queryKey: ['course', courseSlug]
+                queryKey: ['CursoActual']
             });
         },
     });
@@ -94,7 +96,7 @@ export const AddPublicationModal = ({
         mutationFn: updatePublication,
         onSuccess: () => {
             queryClient.invalidateQueries({
-                queryKey: ['course', courseSlug]
+                queryKey: ['CursoActual']
             });
         },
     });
@@ -112,6 +114,8 @@ export const AddPublicationModal = ({
 
     const handleCancel = () => {
         setFormData(emptyForm);
+        setFiles([]);
+        setExistingFiles([]);
         onClose();
     };
 
@@ -143,15 +147,20 @@ export const AddPublicationModal = ({
         };
 
         const response = await uploadImageMutation.mutateAsync(imagen);
-        console.log("Imagen subida----------------", response);
+        console.log("Imagen subida:", response);
         return {
             id: response.data.id,
+            originalFileName: file.name,
+            url: response.data.url,
+            tipo: file.type.startsWith('image/') ? 'imagen' : 'documento'
         };
     };
 
-
     const processFile = async (file: File | Partial<FileNew>) => {
-        if (!(file instanceof File)) return file;
+        if (!(file instanceof File)) {
+            // Si no es un File, es un archivo existente
+            return file;
+        }
 
         if (file.size > 5 * 1024 * 1024) {
             toast.error({
@@ -162,7 +171,7 @@ export const AddPublicationModal = ({
         }
 
         try {
-            console.log("Procesando archivo:", file.name);
+            console.log("Procesando archivo nuevo:", file.name);
             return await handleImageUpload(file);
         } catch (error) {
             toast.error({
@@ -185,18 +194,25 @@ export const AddPublicationModal = ({
         }
 
         try {
+            console.log("Archivos antes de procesar:", files);
+            
             const processedFiles = await Promise.all(files.map((file) => processFile(file)));
             console.log("Archivos procesados:", processedFiles);
 
-            const documentArray = processedFiles.filter(Boolean) as FilePublicacion[];
+            // Filtrar archivos válidos y obtener sus IDs
+            const validFiles = processedFiles.filter(Boolean) as Partial<FileNew>[];
+            const documentIds = validFiles.map((file) => file.id).filter(Boolean) as string[];
 
-            formData.documentIds = documentArray.map((file) => file.id);
-
-            const submissionData = { ...formData };
+            const submissionData = { 
+                ...formData,
+                documentIds: documentIds,
+                descripcion: formData.descripcion?.substring(0, 50)
+            };
 
             console.log("Datos a enviar:", submissionData);
 
             if (initialData && initialData._id) {
+                submissionData._id = initialData._id;
                 await updatePublicationMutation.mutateAsync(submissionData);
 
                 toast.success({
@@ -213,13 +229,15 @@ export const AddPublicationModal = ({
             }
 
             setFormData(emptyForm);
+            setFiles([]);
+            setExistingFiles([]);
             handleCancel();
         } catch (error) {
             toast.error({
                 text: "Error",
-                description: "Ha ocurrido un error procesando tus archivos",
+                description: "Ha ocurrido un error procesando la publicación",
             });
-            console.error("Error procesando archivos:", error);
+            console.error("Error procesando publicación:", error);
         }
     };
 
@@ -230,11 +248,17 @@ export const AddPublicationModal = ({
             onClose={handleCancel}
             buttons={
                 <div className="flex gap-2">
-                    <button onClick={onClose} className="px-4 py-2 text-[#003C71] rounded">
+                    <button 
+                        onClick={handleCancel} 
+                        className="px-4 py-2 text-[#003C71] rounded hover:bg-gray-100"
+                    >
                         Cancelar
                     </button>
-                    <button onClick={handleSubmit} className="px-4 py-2 bg-[#003C71] text-white rounded">
-                        {initialData && initialData._id ? "Editar" : "Agregar"}
+                    <button 
+                        onClick={handleSubmit} 
+                        className="px-4 py-2 bg-[#003C71] text-white rounded hover:bg-blue-700"
+                    >
+                        {initialData && initialData._id ? "Actualizar" : "Agregar"}
                     </button>
                 </div>
             }
@@ -259,7 +283,7 @@ export const AddPublicationModal = ({
                 />
 
                 <MultiFileSelector
-                    initialFiles={files.filter((file): file is Partial<FileNew> => !(file instanceof File))}
+                    initialFiles={existingFiles}
                     setFiles={setFiles}
                 />
             </form>

@@ -20,12 +20,16 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
   useEffect(() => {
     console.log("MultiFileSelector - initialFiles recibidos:", initialFiles);
     if (initialFiles && initialFiles.length > 0) {
-        console.log("Estableciendo archivos iniciales:", initialFiles);
-        setSelectedItems(initialFiles);
+      console.log("Estableciendo archivos iniciales:", initialFiles);
+      setSelectedItems(initialFiles);
+      // También actualizar el padre cuando se cargan los archivos iniciales
+      if (setFiles) {
+        setFiles(initialFiles);
+      }
     } else {
-        setSelectedItems([]);
+      setSelectedItems([]);
     }
-}, [initialFiles]); 
+  }, [initialFiles]);
 
   // Validar si el archivo es de imagen o documento (pdf, doc, docx)
   const validateFileType = (file: File) => {
@@ -79,6 +83,10 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
         }
       });
     }
+    // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const removeItem = (index: number) => {
@@ -88,6 +96,33 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
     if (setFiles) {
       setFiles(newItems);
     }
+  };
+
+  // Helper para determinar si es una imagen
+  const isImage = (item: File | Partial<FileNew>) => {
+    if ('type' in item && item.type) {
+      return (item as File).type.startsWith('image/');
+    }
+    if ('originalFileName' in item && item.originalFileName) {
+      return /\.(png|jpe?g|gif|bmp|webp)$/i.test(item.originalFileName);
+    }
+    return false;
+  };
+
+  // Helper para obtener el nombre del archivo
+  const getFileName = (item: File | Partial<FileNew>) => {
+    if ('originalFileName' in item) {
+      return item.originalFileName || 'Archivo sin nombre';
+    }
+    return (item as File).name;
+  };
+
+  // Helper para obtener la URL del archivo
+  const getFileUrl = (item: File | Partial<FileNew>) => {
+    if ('url' in item && item.url) {
+      return item.url;
+    }
+    return URL.createObjectURL(item as File);
   };
 
   return (
@@ -102,79 +137,83 @@ export const MultiFileSelector: React.FC<MultiFileSelectorProps> = ({
           ref={fileInputRef}
           onChange={handleFileInput}
           multiple
-          accept="image/png, image/jpg,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept="image/png,image/jpg,image/jpeg,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
         />
       </div>
 
-      {
-        selectedItems.length === 0 && (
-          <div className="space-y-1 cursor-pointer border border-gray-200 rounded-md p-4" onClick={() => fileInputRef.current?.click()}>
-            <FileText className="w-5 h-5 text-gray-400 mx-auto" />
-            <p className="text-sm text-gray-500 text-center" >
-              Seleccione un máximo de {MAX_FILES} archivos
-            </p>
-            <p className="text-sm text-gray-500 text-center" >
-              PDF, DOCX, JPG, PNG
-            </p>
-          </div>
-        )
-
-      }
+      {selectedItems.length === 0 && (
+        <div 
+          className="space-y-1 cursor-pointer border border-gray-200 rounded-md p-4 hover:bg-gray-50 transition-colors" 
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <FileText className="w-5 h-5 text-gray-400 mx-auto" />
+          <p className="text-sm text-gray-500 text-center">
+            Seleccione un máximo de {MAX_FILES} archivos
+          </p>
+          <p className="text-sm text-gray-500 text-center">
+            PDF, DOCX, JPG, PNG
+          </p>
+        </div>
+      )}
 
       {selectedItems.length > 0 && (
         <div className="grid grid-cols-4 gap-2 items-center">
           {selectedItems.map((item, index) => (
-            <a
+            <div
               key={index}
-              onClick={(e) => e.stopPropagation()}
               className="relative group flex flex-col items-center justify-center gap-2
                  border border-gray-200 rounded-md p-2 min-h-[80px]"
-              href={
-                "originalFileName" in item
-                  ? (item as FileNew).url
-                  : URL.createObjectURL(item as File)
-              }
-              target="_blank"
-              rel="noopener noreferrer"
             >
-              {(
-                ("type" in item && (item as File).type.startsWith("image/")) ||
-                ("originalFileName" in item &&
-                  /\.(png|jpe?g|gif|bmp|webp)$/i.test((item as FileNew).originalFileName))
-              ) ? (
+              {isImage(item) ? (
                 <ImageIcon className="w-5 h-5 text-gray-400" />
               ) : (
                 <File className="w-5 h-5 text-gray-400" />
               )}
-              <p className="text-xs max-w-full truncate px-1">
-                {"originalFileName" in item ? item.originalFileName : (item as File).name}
+              
+              <p className="text-xs max-w-full truncate px-1" title={getFileName(item)}>
+                {getFileName(item)}
               </p>
+
+              {/* Enlace para ver el archivo */}
+              {'url' in item && item.url && (
+                <a
+                  href={getFileUrl(item)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute inset-0 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="sr-only">Ver archivo</span>
+                </a>
+              )}
 
               <button
                 onClick={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   removeItem(index);
                 }}
                 type="button"
-                className="absolute top-1 right-1 text-gray-600 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 text-gray-600 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-20 bg-white rounded-full p-1"
               >
                 <X className="w-4 h-4" />
               </button>
-            </a>
+            </div>
           ))}
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="relative group flex flex-col items-center justify-center gap-2
-                     border border-gray-200 rounded-md p-2 min-h-[80px] cursor-pointer
-                     hover:bg-gray-200"
-          >
-            <Plus className="w-5 h-5 text-gray-400" />
-          </button>
+          {selectedItems.length < MAX_FILES && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="relative group flex flex-col items-center justify-center gap-2
+                       border border-gray-200 rounded-md p-2 min-h-[80px] cursor-pointer
+                       hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="w-5 h-5 text-gray-400" />
+            </button>
+          )}
         </div>
-
       )}
     </div>
   );
