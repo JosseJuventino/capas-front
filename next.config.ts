@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
         port: "8080",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "http",
+        hostname: "backend-pnc-production-1e70.up.railway.app",
+      },
     ],
   },
 };

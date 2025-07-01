@@ -11,7 +11,6 @@ import ListGridLayout from "@/app/components/Dashboard/ListGridLayout";
 import { DeleteModal } from "@/app/components/Popups/DeleteModal";
 import { Loading } from "@/app/components/Loading";
 import { toast } from "@pheralb/toast";
-import Image from "next/image";
 import { Plus } from "lucide-react";
 import { FormModalEstudiante } from "@/app/components/Popups/AddAlumnoModal";
 
@@ -91,13 +90,10 @@ export default function Page() {
         {
             header: "Imagen",
             accessor: (row) => (
-                <Image
+                <img
                     src={row.image}
                     alt={`Avatar de ${row.image}`}
                     className="w-10 h-10 rounded-full object-cover"
-                    width={40}
-                    height={40}
-                    priority
                 />
             )
         },
@@ -112,8 +108,34 @@ export default function Page() {
         },
 
         {
-            header: "Work Group",
-            accessor: "workgroups"
+            header: "Secciones",
+             accessor: (row) => (
+                <div className="flex items-center -space-x-2 hover:space-x-1 transition-spacing cursor-pointer">
+                    {row.workgroups.slice(0, 3).map((seccion, index) => (
+                        <div
+                            key={index}
+                            className="relative "
+                            data-tooltip-id="avatar-tooltip"
+                            data-tooltip-content={seccion}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center shadow-sm">
+                                <span className="text-xs font-medium text-blue-600">
+                                    {seccion.split(' ').map(n => n[0]).join('')}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                    {row.workgroups.length > 3 && (
+                        <span
+                            className="text-sm text-gray-500 ml-2"
+                            data-tooltip-id="remaining-tooltip"
+                            data-tooltip-content={row.workgroups.slice(3).join(', ')}
+                        >
+                            + {row.workgroups.length - 3} más
+                        </span>
+                    )}
+                </div>
+            ),
         },
     ]
 

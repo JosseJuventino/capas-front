@@ -9,7 +9,6 @@ import { DeleteModal } from "@/app/components/Popups/DeleteModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ListGridLayout from "@/app/components/Dashboard/ListGridLayout";
 import { Loading } from "@/app/components/Loading";
-import Image from "next/image";
 import { addTutor, deleteTutor, getTutors } from "@/app/services/tutors.service";
 import CardTutor from "@/app/components/CardViews/CardTutor";
 import { Tooltip as ReactTooltip } from "react-tooltip";
@@ -49,13 +48,10 @@ export default function TutorPage() {
         {
             header: "Imagen",
             accessor: (row) => (
-                <Image
+                <img
                     src={row.image}
                     alt={`Avatar de ${row.nombre}`}
                     className="w-10 h-10 rounded-full object-cover"
-                    width={40}
-                    height={40}
-                    priority
                 />
             )
         },
