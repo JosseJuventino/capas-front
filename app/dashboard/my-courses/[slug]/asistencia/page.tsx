@@ -71,14 +71,14 @@ export default function Asistencia() {
 
   useEffect(() => {
     if (asistenciaResponse) {
-      
+
       const todayAsistencias = {
         ...asistenciaResponse,
         alumnos: asistenciaResponse.alumnos.filter(
-          (alumno: { fecha: string }) =>
-            alumno.fecha.split("T")[0] ==
-            getCurrentDateString.toString()
+          (alumno: { fecha: string, userXWorkGroupId: string, }) =>
+            alumno.fecha.split("T")[0] === getCurrentDateString.toString()
         ),
+
         encargados: asistenciaResponse.encargados.filter(
           (encargado: { fecha: string }) =>
             encargado.fecha.split("T")[0] ==
@@ -86,10 +86,19 @@ export default function Asistencia() {
         ),
       };
 
+      console.log("todayAsistenciasUSEEFFECT", todayAsistencias);
+      console.log("courseALUMNOS", course?.alumnos);
+
+      todayAsistencias.alumnos = todayAsistencias.alumnos.map((alumno) => ({
+        ...alumno,
+        userXWorkGroupId: course?.alumnos.find((a) => a._id === alumno.userXWorkGroupId)?.userXWorkgroupId || alumno.userXWorkGroupId,
+      }));
+
       initialAlumnosRef.current = todayAsistencias.alumnos;
       initialEncargadosRef.current = todayAsistencias.encargados;
 
       setLocalAsistencia(todayAsistencias);
+ 
     }
   }, [asistenciaResponse]);
 
@@ -149,6 +158,7 @@ export default function Asistencia() {
         const existingIndex = prev.alumnos.findIndex(
           (a) => a.userXWorkGroupId === alumnoId
         );
+
         const newAsistencia = {
           userXWorkGroupId: alumno.userXWorkgroupId,
           fecha: new Date().toISOString().split('T')[0],

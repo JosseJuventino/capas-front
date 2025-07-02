@@ -169,6 +169,7 @@ export interface AsistenciaAlumno {
   estado: string;
   nombre: string;
   imagen: string;
+  alumnoId?: string;
 }
 
 export interface AsistenciaEncargado {
